@@ -1,0 +1,116 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct FastIOFiles {
+    unique_ptr<istream> in_holder;
+    unique_ptr<ostream> out_holder;
+    istream* in;
+    ostream* out;
+    FastIOFiles(int argc, char** argv) {
+        ios::sync_with_stdio(false);
+        cin.tie(nullptr);
+        if (argc >= 3) {
+            in_holder  = make_unique<ifstream>(argv[1]);
+            out_holder = make_unique<ofstream>(argv[2]);
+            if (!*in_holder) { cerr << "Failed to open input file.\n"; exit(1); }
+            if (!*out_holder){ cerr << "Failed to open output file.\n"; exit(1); }
+            in = in_holder.get();
+            out = out_holder.get();
+        } else {
+            in = &cin;
+            out = &cout;
+        }
+    }
+};
+
+int main(int argc, char** argv) {
+    FastIOFiles io(argc, argv);
+    istream& in = *io.in;
+    ostream& out = *io.out;
+
+    int T;
+    in >> T;
+    for (int tc = 1; tc <= T; ++tc) {
+        int N;
+        in >> N;
+        vector<int> A(N);
+        for (int i = 0; i < N; ++i) in >> A[i];
+
+        vector<int> K, S;
+        K.reserve(N);
+        S.reserve(N);
+
+        int pos = 0;
+        while (pos < N) {
+            int s = A[pos];
+            int i = pos;
+            bool seen_wrap = false;
+            int max_before_wrap = s;
+            while (i + 1 < N) {
+                if (!seen_wrap) {
+                    if (A[i + 1] == A[i] + 1) {
+                        ++i;
+                        max_before_wrap = A[i];
+                    } else if (A[i + 1] == 1) {
+                        seen_wrap = true;
+                        ++i;
+                        if (s == 1) {
+                            --i;
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    if (A[i] == s - 1) {
+                        break;
+                    }
+                    if (A[i + 1] == A[i] + 1) {
+                        ++i;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            int k;
+            if (!seen_wrap) k = A[i];
+            else {
+                k = max_before_wrap;
+                if (k < s) k = s;
+            }
+            K.push_back(k);
+            S.push_back(s);
+            pos = i + 1;
+        }
+
+        int m = (int)K.size();
+        vector<int> delta(m, 0);
+        long long R = 0;
+        for (int i = m - 1; i >= 0; --i) {
+            int k = K[i];
+            int s = S[i];
+            int need = (s - 1) % k;
+            if (need < 0) need += k;
+            int rmod = (int)(R % k);
+            if (rmod < 0) rmod += k;
+            int add = (need - rmod);
+            if (add < 0) add += k;
+            delta[i] = add;
+            R += add;
+        }
+
+        vector<pair<int,int>> ops;
+        ops.reserve(N + m + 5);
+        for (int i = 0; i < m; ++i) {
+            ops.push_back({1, K[i]});
+            for (int t = 0; t < delta[i]; ++t) ops.push_back({2, 0});
+        }
+
+        out << "Case #" << tc << ": " << ops.size() << "\n";
+        for (auto &op : ops) {
+            if (op.first == 1) out << "1 " << op.second << "\n";
+            else out << "2\n";
+        }
+    }
+    return 0;
+}
